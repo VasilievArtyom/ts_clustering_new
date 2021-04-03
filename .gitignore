@@ -1,1 +1,3 @@
 raw/*.csv
+*/*.csv
+!regularization_and_split/element_name_ids.csv

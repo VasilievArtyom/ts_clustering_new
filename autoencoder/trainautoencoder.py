@@ -27,7 +27,7 @@ np.random.seed(0)  # Set a random seed for reproducibility
 # T U N A B L E
 gpu_id = str(0)
 WEIGHTSVERVION = 0
-latent_dim = 3
+latent_dim = 1
 # <--------------------->
 
 if len(sys.argv) > 1:
@@ -82,16 +82,16 @@ class Autoencoder(Model):
         self.latent_dim = latent_dim   
         self.encoder = Sequential([
         	InputLayer((28, ), name='Encoder_input'),
-            Dense(10, activation='relu', name='Encoder_hidden_large'),
-            Dense(5, activation='relu', name='Encoder_hidden_middle'),
-            Dense(3, activation='relu', name='Encoder_hidden_small'),
+            # Dense(512, activation='sigmoid', name='Encoder_hidden_large'),
+            # Dense(2, activation='sigmoid', name='Encoder_hidden_middle'),
+            # Dense(5, activation='sigmoid', name='Encoder_hidden_small'),
             Dense(latent_dim, activation='relu', name='Encoder_output')
         ])
         self.decoder = Sequential([
         	InputLayer((latent_dim, ), name='Decoder_input'),
-            Dense(3, activation='sigmoid', name='Decoder_hidden_large'),
-            Dense(5, activation='sigmoid', name='Decoder_hidden_middle'),
-            Dense(10, activation='sigmoid', name='Decoder_hidden_small'),
+            # Dense(5, activation='sigmoid', name='Decoder_hidden_small'),
+            # Dense(512, activation='sigmoid', name='Decoder_hidden_middle'),
+            # Dense(2, activation='sigmoid', name='Decoder_hidden_large'),
             Dense(28, activation='sigmoid', name='Decoder_output'),
         ])
   
@@ -122,10 +122,10 @@ class Autoencoder(Model):
 # generator_validdata = batch_generator(batch_size=batch_size, dataset=test, index_stream=test_index)
 
 autoencoder = Autoencoder(latent_dim)
-autoencoder.compile(optimizer='adam', loss='mse')
+autoencoder.compile(optimizer='RMSprop', loss='logcosh')
 path_checkpoint = 'weights/version{}.keras'.format(WEIGHTSVERVION)
 callback_checkpoint = ModelCheckpoint(filepath=path_checkpoint, monitor='val_loss', verbose=1, save_weights_only=True, save_best_only=True)
-callback_early_stopping = EarlyStopping(monitor='val_loss', min_delta=1e-5, patience=10, verbose=1)
+callback_early_stopping = EarlyStopping(monitor='val_loss', min_delta=1e-3, patience=10, verbose=1)
 callback_reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, min_lr=1e-5, patience=0, verbose=1)
 callbacks = [callback_early_stopping, callback_checkpoint, callback_reduce_lr]
 
@@ -152,10 +152,11 @@ fig, ax = plt.subplots(figsize=(5, 5))
 ax.plot(history.history["loss"], label="Training Loss")
 ax.plot(history.history["val_loss"], label="Validation Loss")
 plt.grid()
-plt.ylabel(r'MSE')
+plt.ylabel(r'$\sum_i \log (\cosh (y^{target}_i - y_i))$')
 plt.xlabel(r'Epoch')
 ax.xaxis.grid(b=True, which='both')
 ax.yaxis.grid(b=True, which='both')
+plt.legend(loc='best')
 plt.tight_layout()
 plt.draw()
 fig.savefig('weights/version{}.png'.format(WEIGHTSVERVION))
